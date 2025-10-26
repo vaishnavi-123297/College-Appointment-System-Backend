@@ -1,61 +1,230 @@
-# College Appointment API
+#College Appointment System API Documentation
+College Appointment System API , which allows students and professors to manage appointments efficiently. Whether you're a student trying to book an appointment with a professor, or a professor managing your availability, this system has you covered.
 
-## Setup
-1. Copy `.env.example` to `.env` and set values.
-2. Install dependencies:
-3. Start dev server:
-4. Run tests:
+Base URL
+http://localhost:3000
 
-## Notes
-- Tests use an in-memory MongoDB so you don't need a local database for tests.
-- Endpoints:
-- POST /api/auth/register
-- POST /api/auth/login
-- POST /api/professors/:profId/slots
-- GET /api/professors/:profId/slots
-- POST /api/appointments
-- GET /api/appointments/me
-- DELETE /api/appointments/:apptId
-5.npm test
+Endpoints
+1. User Authentication
+Signup
+POST /auth/signup
 
-Run server (manual Postman demo)
+Request Body:
 
-If you want to demo manually via Postman you need a running MongoDB or use an online MongoDB URI:
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "role": "professor" // or "student"
+}
+Response:
 
-Copy .env.example → .env, update MONGO to your running Mongo URI and set JWT_SECRET.
+{
+  "message": "User registered successfully",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "role": "professor"
+  }
+}
+Login
+POST /auth/login
 
-Start server:
-npm run dev
-Server will listen on http://localhost:4000 (or the PORT you set).
+Request Body:
 
-6) Postman quick sequence (summary of requests to test flow)
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+Response:
 
-POST /api/auth/register — create professor (role: professor)
+{
+  "message": "Login successful",
+  "token": "JWT-TOKEN",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "role": "professor"
+  }
+}
+2. Professor Availability
+Add Availability
+POST /availability
 
-POST /api/auth/login — login professor → copy token
+Headers:
 
-POST /api/professors/:profId/slots — create slots (Auth header: Bearer <token>)
+{
+  "Authorization": "Bearer <JWT-TOKEN>"
+}
+Request Body:
 
-POST /api/auth/register — create student A1
+{
+  "time": "10:00 AM"
+}
+Response:
 
-POST /api/auth/login — login student A1 → copy token
+{
+  "message": "Availability added successfully",
+  "availability": {
+    "id": 1,
+    "time": "10:00 AM"
+  }
+}
+Get Availability
+GET /availability/:professorId
 
-GET /api/professors/:profId/slots — list available slots (Auth: student token)
+Headers:
 
-POST /api/appointments — body { "slotId": "<id>" } (Auth: student token)
+{
+  "Authorization": "Bearer <JWT-TOKEN>"
+}
+Response:
 
-Repeat for student A2
+{
+  "availability": [
+    {
+      "id": 1,
+      "time": "10:00 AM"
+    },
+    {
+      "id": 2,
+      "time": "11:00 AM"
+    }
+  ]
+}
+3. Appointments
+Book Appointment
+POST /appointments
 
-DELETE /api/appointments/:apptId — professor cancels (Auth: professor token)
+Headers:
 
-GET /api/appointments/me — student checks appointments (Auth: student A1 token)
+{
+  "Authorization": "Bearer <JWT-TOKEN>"
+}
+Request Body:
 
-7) Troubleshooting tips
+{
+  "professorId": 1,
+  "time": "10:00 AM"
+}
+Response:
 
-If npm test times out: increase jest.setTimeout() value in test.
+{
+  "message": "Appointment booked successfully",
+  "appointment": {
+    "id": 1,
+    "studentId": 2,
+    "professorId": 1,
+    "time": "10:00 AM",
+    "status": "pending"
+  }
+}
+Get Student's Appointments
+GET /appointments/student
 
-If you see duplicate-key E11000 errors while testing manually with local Mongo: either drop the DB or register with a different email.
+Headers:
 
-If server fails to connect: check MONGO in .env and ensure MongoDB is running or use a cloud MongoDB (Atlas).
+{
+  "Authorization": "Bearer <JWT-TOKEN>"
+}
+Response:
 
-If Authorization fails: ensure header format is exactly Authorization: Bearer <token>.
+{
+  "appointments": [
+    {
+      "id": 1,
+      "professorId": 1,
+      "time": "10:00 AM",
+      "status": "pending"
+    }
+  ]
+}
+Get Professor's Appointments
+GET /appointments/professor
+
+Headers:
+
+{
+  "Authorization": "Bearer <JWT-TOKEN>"
+}
+Response:
+
+{
+  "appointments": [
+    {
+      "id": 1,
+      "studentId": 2,
+      "time": "10:00 AM",
+      "status": "pending"
+    }
+  ]
+}
+Cancel Appointment
+DELETE /appointments/:appointmentId
+
+Headers:
+
+{
+  "Authorization": "Bearer <JWT-TOKEN>"
+}
+Response:
+
+{
+  "message": "Appointment canceled successfully"
+}
+Appointment Status Management
+PATCH /appointments/:appointmentId/status
+
+Headers:
+
+{
+  "Authorization": "Bearer <JWT-TOKEN>"
+}
+Request Body:
+
+{
+  "status": "confirmed" // or "completed", "pending", "canceled"
+}
+Response:
+
+{
+  "message": "Appointment status updated successfully",
+  "appointment": {
+    "id": 1,
+    "status": "confirmed"
+  }
+}
+Postman Testing Workflow
+Signup Users
+
+Use /auth/signup to create both Professor and Student accounts.
+Login Users
+
+Use /auth/login to retrieve tokens for both Professor and Student.
+Add Professor Availability
+
+Use /availability to add availability for the professor. Make sure to include the Professor's JWT token.
+View Professor Availability
+
+Use /availability/:professorId to fetch availability for the professor. Include the Student's JWT token.
+Book Appointment
+
+Use /appointments to book an appointment as a student. Provide the Professor's ID and the desired time.
+Check Appointments
+
+For Students: Use /appointments/student to view the student’s appointments.
+For Professors: Use /appointments/professor to view the professor’s appointments.
+Cancel Appointment
+
+Use /appointments/:appointmentId to cancel an appointment as a professor.
+Update Appointment Status
+
+For Professors: Use /appointments/:appointmentId/status to mark an appointment as "confirmed."
+For Students: Use /appointments/:appointmentId/status to mark the appointment as "completed" after attending.
+Explanation of Appointment Statuses
+Pending: The appointment has been booked but is waiting for confirmation by the professor.
+Confirmed: The professor has confirmed the appointment.
+Completed: The student has attended the appointment and marks it as completed.
+Canceled: The appointment has been canceled (either by the student or the professor).
+recent updates:
+
+This is the updated API documentation, which now includes the Appointment Status Management feature. The professors can confirm appointments, and students can mark appointments as completed. You can also manage the status with a PATCH request.
